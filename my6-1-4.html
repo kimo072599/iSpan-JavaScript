@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        let number = 7;
+        // 用 switch 取代長 if...else if...
+        switch(number){
+            case "7":
+                console.log("string 7");
+            break;
+
+            case 7:
+                console.log("number 7");
+            break;
+
+            case "number":
+                console.log("string number");
+            break;
+
+            default:
+                console.log("string default")
+            // 最後一個 case 可以不加 break
+        }
+
+        // 多個 case 執行相同程式碼的寫法
+        let number2 = 7;
+        
+        switch(number2){
+            case "7":
+            case 7:
+            case "number":
+                console.log("7");
+            break;
+
+            default:
+                console.log("string default")
+            // 最後一個 case 可以不加 break
+        }
+    </script>
+</head>
+<body>
+    
+</body>
+</html>

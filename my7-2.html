@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        let obj = {
+            fname: 'Darren',
+            lname: 'Yang',
+            age: null,
+            lineId: 'telunyang'
+        };
+
+        for (let attr in obj){
+            console.log(attr, obj[attr]);
+            // 為什麼不是 obj.attr
+        }
+        // 這邊不能用 of，會報錯，因為 obj 是無序的(就像 dict)
+        // 可是 dict 有序誒?
+        // 比較下一章 8-1 ，取用 array 時就可以用 of 並取得陣列值
+
+        console.log(Object.keys(obj));
+        console.log(Object.values(obj));
+        console.log(Object.entries(obj));
+    </script>
+</head>
+<body>
+    
+</body>
+</html>

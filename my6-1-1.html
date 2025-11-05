@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        let condition = false;
+        // javascript 中 if 的作用域要用{}包起來
+        if (condition){  // 因為 condition 本身已經是布林值，就不用再給條件
+            console.log("Hello World!");
+            document.write("Hello World!")
+        } else {
+            console.log("May you have a nice day!");
+            document.write("May you have a nice day!")
+        }
+
+        // 多個條件判斷，只會執行第一個正確的
+        let number = 7;
+        if (number > 10){
+            console.log(1);
+        } else if (number === 7){
+            console.log(2);
+        } else if (number > 5){
+            console.log(3);
+        } else if (number === 6){
+            console.log(4);
+        } else {
+            console.log("Not found");
+        }
+    </script>
+</head>
+<body>
+    
+</body>
+</html>
