@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        function say() {
+            console.log("Hello World!");
+        }
+
+        say();
+
+        function greet01(name){
+            console.log(`Hello, ${name}`);
+        }
+
+        greet01("Kimo");
+
+        function greet02(greeting, name) {
+            console.log(greeting + "," + name);
+        }
+
+        greet02("Hi", "Kimo"); // arguments 引數
+        // 沒有用 = 賦值的呼叫函式法
+
+        function getMessage(){
+            return "Good job!";
+        }
+        console.log(getMessage());
+
+        function getMessage02(name){
+            return "Good job! " + name;
+        }
+        console.log(getMessage02("Kimo"));
+
+    </script>
+</head>
+<body>
+    
+</body>
+</html>

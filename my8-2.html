@@ -36,6 +36,16 @@
     console.log(name);
     listOfName.unshift(name);
     console.log(listOfName);
+    
+    listOfName.splice(0, 0, "Alex");
+    console.log(listOfName);
+    listOfName.splice(1, 0, "1");
+    console.log(listOfName);
+    listOfName.splice(1, 1);
+    console.log(listOfName);
+    
+    listOfName.splice(1, 2, "Bill", "Cook");
+    console.log(listOfName);
     </script>
 </head>
 <body>

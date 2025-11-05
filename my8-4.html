@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        let arr = ["Alex", "Bill"];
+
+        // 0 在 if 判斷式內等同於 false，如果沒有寫 > -1
+        // 則會無法檢索所引為 0 的值
+        if (arr.indexOf("Bill")){
+            console.log("找到 Bill");
+        }
+        if (arr.indexOf("Alex")){
+            console.log("找到 Alex");
+        } else{
+            alert("沒找到 Alex");
+        }
+        if (arr.indexOf("Bill") > -1){
+            console.log("找到 Bill");
+        }
+        if (arr.indexOf("Alex") > -1){
+            console.log("找到 Alex");
+        }
+
+        let str = "人生好難";
+
+        if (str.indexOf("好") > -1){
+            alert("有找到");
+        } else{
+            alert("沒找到");
+        }
+    </script>
+</head>
+<body>
+    
+</body>
+</html>

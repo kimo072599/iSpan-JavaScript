@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        // 建立類別 (class)
+        // this 就是 python 中 self 的概念
+        let Person = function(name, gender, age){
+            this.name = name;
+            this.gender = gender;
+            this.age = age;
+            this.getAge = function(){
+                return this.age;
+            }
+        }
+
+        // 建立實體物件
+        let person1 = new Person("Alice", "女", 22);
+        let person2 = new Person("Bill", "男", 18);
+
+        // 取得物件屬性值
+        console.log(person1.name);
+        console.log(person2.name);
+        
+        // 
+        console.log(person1.getAge());
+        console.log(person2.getAge());
+
+    </script>
+</head>
+<body>
+    
+</body>
+</html>
