@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <ul id="myList">
+        <li>Item 01</li>
+        <li>Item 02</li>
+        <li>Item 03</li>
+    </ul>
+    <!-- 
+    複習 CSS：
+     ul#myList li 這樣會取得所有 myList 內的 li 標籤，包含每個層次中的 li 標籤
+     ul#myList > li 這樣只會取得 myList 的下一層 li 標籤
+     -->
+    <script>
+        let myList = document.querySelector("ul#myList");
+        let newNode = document.createElement("li");
+        let textNode = document.createTextNode("Hello World!");
+        newNode.appendChild(textNode);
+        myList.appendChild(newNode);
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        //cb = callback function (回呼函式)
+        function test(name, cb) {
+            let str = 'Hi, ' + name;
+            cb(str)
+        }
+
+        test('Darren', function (str) {
+            console.log(str);
+        });
+    </script>
+</head>
+<body>
+    
+</body>
+</html>
