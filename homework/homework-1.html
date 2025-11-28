@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>homework-1</title>
+    <style>
+        .box1 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            background-color: #cccccc;
+        }
+
+        .isprime {
+            background-color: rgb(226, 112, 112);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 300px;
+            height: 250px;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        .notprime {
+            background-color: blanchedalmond;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 300px;
+            height: 250px;
+            font-size: 30px;
+            font-weight: 800;
+        }
+
+        .primediv {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .prime {
+            margin-top: 0;
+            margin-bottom: 0;
+            background-color: rgb(226, 112, 112);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100px;
+            height: 100px;
+            font-size: 25px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="box1">
+        <label for="maxnum">自訂數字範圍：</label>
+        <input type="text" id="maxnum" name="maxnum" placeholder="輸入大於2的整數" value="">
+        <button id="btn_getnum">送出</button>
+    </div>
+    <div class="box1">
+        <p class="notprime"></p>
+    </div>
+    <div class="primediv"></div>
+
+    <script>
+        // 判斷是否為質數的函式
+        function is_prime(num) {
+            if (num < 2) return false;
+            for (let i = 2; i * i <= num; i++) {
+                if (num % i == 0) return false;
+            }
+            return true;
+        }
+
+        // 等待時間的函式
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 讓質數一個一個跑出來的函式
+        async function showPrimes(maxnum) {
+            for (let num = 2; num <= maxnum; num++) {
+                if (is_prime(num)) {
+
+                    let oldP = document.querySelector("p");
+                    let newP = document.createElement("p");
+                    newP.className = "isprime";
+                    newP.textContent = num;
+                    mydiv.replaceChild(newP, oldP);
+                    await sleep(600);
+
+                    let primeP = document.createElement("p");
+                    primeP.className = "prime";
+                    primeP.textContent = num;
+                    primediv.appendChild(primeP);
+                    await sleep(150);
+                }
+                else if (is_prime(num) == false) {
+                    let oldP = document.querySelector("p");
+                    let newP = document.createElement("p");
+                    newP.className = "notprime";
+                    newP.textContent = num;
+
+                    mydiv.replaceChild(newP, oldP);
+
+                    await sleep(150);
+                }
+            }
+        }
+        let mydiv = document.querySelectorAll("div")[1];
+        let primediv = document.querySelector("div.primediv");
+        document.querySelector('button#btn_getnum').addEventListener("click", function (event) {
+            let maxnum = document.querySelector("input#maxnum").value;
+            showPrimes(maxnum);
+        })
+    </script>
+</body>
+
+</html>

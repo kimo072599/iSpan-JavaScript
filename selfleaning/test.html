@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script>
+        var x = 2;
+        console.log("before test define", x);
+        function test() {
+            x = 1
+            console.log("test call", x)
+        };
+        console.log("before test call", x);
+        test();
+        console.log("after test call", x);
+
+        function test1() {
+            var x = 3
+            console.log("test1 call", x)
+        };
+        console.log("before test1 call", x);
+        test1();
+        console.log("after test1 call", x);
+
+        y = 2;
+        console.log("before", y);
+        function test2() {
+            var y = 1
+            console.log("test2 call", y)
+        };
+        console.log("before test2 call", y);
+        test2();
+        console.log("after test2 call", y);
+
+        var z = 5;
+        var z = 6;
+
+        let k = 7;
+        // let k = 8;
+
+        const pi = 3.14;
+        // const pi = 3.1415;
+
+        for (let i = 1; i <= 9; i += 2) {
+            for (let j = 1; j <= 9; j += 2) {
+                console.log(`${i} * ${j} = ${i * j}`);
+                document.write(`${i} * ${j} = ${i * j} &nbsp;`);
+            }
+            document.write('<br>')
+        }
+
+        let arr = [];
+        arr[0] = 1;
+        arr[1] = 2;
+        arr["hello"] = 3;
+        arr[100] = 4;
+        console.log(arr)
+        a = arr.indexOf(3)
+        b = arr.indexOf(4)
+        console.log(a)
+    </script>
+</head>
+
+<body>
+
+</body>
+
+</html>
