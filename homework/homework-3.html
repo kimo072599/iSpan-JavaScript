@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺北市停車場資訊</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        h1 {
+            display: flex;
+            justify-content: center;
+        }
+
+        #legend {
+            border: 1px solid;
+            margin-bottom: 10px;
+        }
+
+        #legend h2 {
+            margin-left: 20px;
+            margin-bottom: 5px;
+            margin-top: 5px;
+        }
+
+        #legend div {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #legend p {
+            margin: 0;
+            padding: 0;
+            padding-top: 6px;
+        }
+
+        #map {
+            height: 550px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>台北市停車場資訊</h1>
+    </header>
+    <div id="legend">
+        <h2>圖例</h2>
+        <div id="points">
+            <div id="redpoint">
+                <img src="redpoint.png" width="66px" height="37px">
+                <p>剩餘格位不足</p>
+            </div>
+            <div id="yellowpoint">
+                <img src="yellowpoint.png" width="66px" height="37px">
+                <p>剩餘格位不足半數</p>
+            </div>
+            <div id="greenpoint">
+                <img src="greenpoint.png" width="66px" height="37px">
+                <p>剩餘格位足夠</p>
+            </div>
+            <div id="bluepoint">
+                <img src="bluepoint.png" width="66px" height="37px">
+                <p>目前無法提供即時車位數資訊</p>
+            </div>
+            <div id="greypoint">
+                <img src="greypoint.png" width="66px" height="37px">
+                <p>無車位數資訊</p>
+            </div>
+        </div>
+        <div id="hascharge" style="position: relative;">
+            <img src="greypoint.png" width="66px" height="37px" style="visibility:hidden">
+            <img src="hascharge.png" width="50px" height="50px" style="position:absolute;  left: 8px; top:-5px">
+            <p>有電車充電座</p>
+        </div>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.2/dist/leaflet.js"
+        integrity="sha256-o9N1jGDZrf5tS+Ft4gbIK7mYMipq9lqpVJ91xHSyKhg=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+    <script>
+        var map = L.map('map').setView([25.0339145, 121.5412233], 16);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        let layerGroup = null;
+        let arrLayers = [];
+
+        Promise.all([
+            fetch("https://tcgbusfs.blob.core.windows.net/blobtcmsv/TCMSV_alldesc.json").then(r => r.json()),
+            fetch("https://tcgbusfs.blob.core.windows.net/blobtcmsv/TCMSV_allavailable.json").then(r => r.json())
+        ]).then(([descData, availData]) => {
+
+            const park_list = descData.data.park;        // 基本資料
+            const remain_list = availData.data.park;     // 空位資料
+
+            // 先做查表 (id -> 空位資料整包)
+            const remainMap = new Map(remain_list.map(item => [item.id, item]));
+
+            // 合併兩份資料
+            const merged_list = park_list.map(park => {
+                return {
+                    ...park,
+                    available_info: remainMap.get(park.id) || null
+                };
+            });
+
+            console.log(merged_list);
+            return merged_list;
+        }).then(function (merged_park_info) {
+
+            // 定義 TWD97（二度分帶 121E）與 WGS84
+            const TWD97 = "+proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 "
+                + "+x_0=250000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
+
+            const WGS84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+
+            var PointIcon = L.Icon.extend({
+                options: {
+                    iconSize: [66, 37],
+                    iconAnchor: [32, 38],
+                    popupAnchor: [1, -37]
+                }
+            });
+            var redpoint = new PointIcon({ iconUrl: 'redpoint.png' }),
+                yellowpoint = new PointIcon({ iconUrl: 'yellowpoint.png' }),
+                greenpoint = new PointIcon({ iconUrl: 'greenpoint.png' }),
+                bluepoint = new PointIcon({ iconUrl: 'bluepoint.png' }),
+                greypoint = new PointIcon({ iconUrl: 'greypoint.png' });
+
+            var hascharge = L.icon({
+                iconUrl: 'hascharge.png',
+                iconSize: [50, 50], // Icon 大小
+                iconAnchor: [25, 50], // 調整 Icon 出現位置
+                popupAnchor: [1, -37]
+            });
+
+            for (let park of merged_park_info) {
+
+                let tw97x = parseFloat(park.tw97x);
+                let tw97y = parseFloat(park.tw97y);
+
+                // tw97x, tw97y 都存在才畫點
+                if (!tw97x || !tw97y) {
+                    console.warn("No TWD97 for:", park.id);
+                    continue;
+                }
+
+                // 轉換成 WGS84
+                let [lng, lat] = proj4(TWD97, WGS84, [tw97x, tw97y]);
+
+                if (park.available_info) {
+                    // 計算空停車格率
+                    if (park.available_info.availablecar > 0) {
+                        car_available_rate = park.available_info.availablecar / park.totalcar;
+                        // console.log(car_available_rate);
+                        if (car_available_rate > 1) {
+                            console.log(park.available_info.availablecar, park.totalcar);
+                        }
+                    }
+
+                    function add_carge_simbol() {
+                        if (park.available_info.ChargeStation) {
+                            let charge_marker = L.marker([lat, lng], { icon: hascharge });
+                            charge_marker.bindPopup(`${park["name"]}`);
+                            arrLayers.push(charge_marker);
+                        }
+                    }
+                    if (park.available_info.availablecar == -9) {
+                        let blue_marker = L.marker([lat, lng], { icon: bluepoint });
+                        blue_marker.bindPopup(`${park["name"]}`);
+                        arrLayers.push(blue_marker);
+                        add_carge_simbol()
+                    } else if (park.available_info.availablecar == -13 | car_available_rate < 0.2) {
+                        let red_marker = L.marker([lat, lng], { icon: redpoint });
+                        red_marker.bindPopup(`${park["name"]}`);
+                        arrLayers.push(red_marker);
+                        add_carge_simbol()
+                    } else if (park.available_info.availablecar == -12 | car_available_rate < 0.5) {
+                        let yellow_marker = L.marker([lat, lng], { icon: yellowpoint });
+                        yellow_marker.bindPopup(`${park["name"]}`);
+                        arrLayers.push(yellow_marker);
+                        add_carge_simbol()
+                    } else if (park.available_info.availablecar == -11 | car_available_rate <= 1) {
+                        let green_marker = L.marker([lat, lng], { icon: greenpoint });
+                        green_marker.bindPopup(`${park["name"]}`);
+                        arrLayers.push(green_marker);
+                        add_carge_simbol()
+                    }
+                } else {
+                    let grey_marker = L.marker([lat, lng], { icon: greypoint });
+                    grey_marker.bindPopup(`${park["name"]}`);
+                    arrLayers.push(grey_marker);
+                }
+
+            }
+
+            layerGroup = L.layerGroup(arrLayers);
+            layerGroup.addTo(map);
+        });
+
+
+
+
+    </script>
+</body>
+
+</html>
