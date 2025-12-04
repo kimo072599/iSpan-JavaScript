@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺北市停車場資訊</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        h1 {
+            display: flex;
+            justify-content: center;
+        }
+
+        .body {
+            padding: 5px;
+            padding-bottom: 10px;
+        }
+
+        #legend {
+            border: 1px solid;
+            margin-bottom: 10px;
+            background-color: #cccccc;
+            border-radius: 10px;
+        }
+
+        #legend h2 {
+            margin-left: 20px;
+            margin-bottom: 7px;
+            margin-top: 5px;
+        }
+
+        #legend div {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        #legend p {
+            margin: 0;
+            padding: 0;
+            padding-top: 6px;
+        }
+
+        #map {
+            height: 550px;
+        }
+
+        p.popname {
+            margin: 0;
+            padding: 0;
+        }
+
+        p.popremain {
+            margin: 0;
+            padding: 0;
+            font-weight: 800;
+        }
+
+        .refreshdiv {
+            position: relative;
+            padding-top: 10px;
+        }
+
+        #refresh {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        #next_refresh {
+            position: absolute;
+            right: 20px;
+        }
+
+        footer {
+            padding: 10px;
+            background-color: #dadada;
+        }
+
+        footer p {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>台北市停車場資訊</h1>
+    </header>
+
+    <div class="body">
+        <div id="legend">
+            <h2>圖例</h2>
+            <div id="points">
+                <div id="redpoint">
+                    <img src="redpoint.png" width="66px" height="37px">
+                    <p>剩餘格位不足</p>
+                </div>
+                <div id="yellowpoint">
+                    <img src="yellowpoint.png" width="66px" height="37px">
+                    <p>剩餘格位不足半數</p>
+                </div>
+                <div id="greenpoint">
+                    <img src="greenpoint.png" width="66px" height="37px">
+                    <p>剩餘格位足夠</p>
+                </div>
+                <div id="bluepoint">
+                    <img src="bluepoint.png" width="66px" height="37px">
+                    <p>目前無法提供即時車位數資訊</p>
+                </div>
+                <div id="greypoint">
+                    <img src="greypoint.png" width="66px" height="37px">
+                    <p>無車位數資訊</p>
+                </div>
+            </div>
+            <div id="hascharge" style="position: relative;">
+                <img src="greypoint.png" width="66px" height="37px" style="visibility:hidden">
+                <img src="hascharge.png" width="50px" height="50px" style="position:absolute; left: 8px; top:-5px">
+                <p>有電車充電座</p>
+            </div>
+        </div>
+
+        <div id="map"></div>
+        <div class="refreshdiv">
+            <span id="next_refresh"></span>
+            <button id="refresh">更新</button>
+            <span id="current_time"></span>
+        </div>
+    </div>
+
+    <footer>
+        <p>資料來源</p>
+        <p>停車場資訊 ： https://tcgbusfs.blob.core.windows.net/blobtcmsv/TCMSV_alldesc.json</p>
+        <p>空位即時資訊 ： https://tcgbusfs.blob.core.windows.net/blobtcmsv/TCMSV_allavailable.json</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.2/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
+
+    <script>
+        const map = L.map('map').setView([25.0339145, 121.5412233], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        let layerControl = L.control.layers(null, {}).addTo(map);
+        let currentOverlayLayers = {};
+        let firstLoad = true;
+
+        // 存放各圖層的 marker
+        let arrLayers_red = [], arrLayers_yellow = [], arrLayers_green = [], arrLayers_blue = [], arrLayers_grey = [];
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function get_park_info() {
+            // 清空舊資料
+            arrLayers_red = []; arrLayers_yellow = []; arrLayers_green = []; arrLayers_blue = []; arrLayers_grey = [];
+
+            const [descData, availData] = await Promise.all([
+                fetch("https://tcgbusfs.blob.core.windows.net/blobtcmsv/TCMSV_alldesc.json").then(r => r.json()),
+                fetch("https://tcgbusfs.blob.core.windows.net/blobtcmsv/TCMSV_allavailable.json").then(r => r.json())
+            ]);
+
+            const park_list = descData.data.park;
+            const remain_list = availData.data.park;
+            const remainMap = new Map(remain_list.map(i => [i.id, i]));
+
+            const merged_list = park_list.map(p => ({ ...p, available_info: remainMap.get(p.id) || null }));
+
+            // 座標轉換
+            const TWD97 = "+proj=tmerc +lat_0=0 +lon_0=121 +k=0.9999 +x_0=250000 +y_0=0 +ellps=GRS80 +units=m +no_defs";
+            const WGS84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs";
+
+            const PointIcon = L.Icon.extend({ options: { iconSize: [66, 37], iconAnchor: [32, 38], popupAnchor: [1, -37] } });
+            const redpoint = new PointIcon({ iconUrl: 'redpoint.png' }),
+                yellowpoint = new PointIcon({ iconUrl: 'yellowpoint.png' }),
+                greenpoint = new PointIcon({ iconUrl: 'greenpoint.png' }),
+                bluepoint = new PointIcon({ iconUrl: 'bluepoint.png' }),
+                greypoint = new PointIcon({ iconUrl: 'greypoint.png' });
+
+            const hascharge = L.icon({ iconUrl: 'hascharge.png', iconSize: [50, 50], iconAnchor: [25, 50], popupAnchor: [1, -37] });
+
+            for (let park of merged_list) {
+                let tw97x = parseFloat(park.tw97x), tw97y = parseFloat(park.tw97y);
+                if (!tw97x || !tw97y) continue;
+                let [lng, lat] = proj4(TWD97, WGS84, [tw97x, tw97y]);
+
+                let remain, car_available_rate;
+
+                if (park.available_info) {
+                    if (park.available_info.availablecar >= 0) {
+                        remain = park.available_info.availablecar;
+                        car_available_rate = park.available_info.availablecar / park.totalcar;
+                    } else {
+                        remain = "無法取得精確數量";
+                    }
+
+                    if (park.available_info.availablecar == -9) {
+                        remain = "目前無法取得";
+                        let m = L.marker([lat, lng], { icon: bluepoint }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                        arrLayers_blue.push(m);
+                        if (park.available_info.ChargeStation) {
+                            let cm = L.marker([lat, lng], { icon: hascharge }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                            arrLayers_blue.push(cm);
+                        }
+                    } else if (park.available_info.availablecar == -13 || car_available_rate < 0.2) {
+                        let m = L.marker([lat, lng], { icon: redpoint }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                        arrLayers_red.push(m);
+                        if (park.available_info.ChargeStation) {
+                            let cm = L.marker([lat, lng], { icon: hascharge }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                            arrLayers_red.push(cm);
+                        }
+                    } else if (park.available_info.availablecar == -12 || (car_available_rate >= 0.2 && car_available_rate < 0.5)) {
+                        let m = L.marker([lat, lng], { icon: yellowpoint }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                        arrLayers_yellow.push(m);
+                        if (park.available_info.ChargeStation) {
+                            let cm = L.marker([lat, lng], { icon: hascharge }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                            arrLayers_yellow.push(cm);
+                        }
+                    } else if (park.available_info.availablecar == -11 || car_available_rate <= 1) {
+                        let m = L.marker([lat, lng], { icon: greenpoint }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                        arrLayers_green.push(m);
+                        if (park.available_info.ChargeStation) {
+                            let cm = L.marker([lat, lng], { icon: hascharge }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">剩餘車位數：${remain}</p>`);
+                            arrLayers_green.push(cm);
+                        }
+                    }
+                } else {
+                    let m = L.marker([lat, lng], { icon: greypoint }).bindPopup(`<p class="popname">${park.name}</p><p class="popremain">無剩餘車位數資訊</p>`);
+                    arrLayers_grey.push(m);
+                }
+            }
+
+            let newOverlay = {
+                "剩餘格位足夠": L.layerGroup(arrLayers_green),
+                "剩餘格位不足半數": L.layerGroup(arrLayers_yellow),
+                "剩餘格位不足": L.layerGroup(arrLayers_red),
+                "目前無即時資訊": L.layerGroup(arrLayers_blue),
+                "無車位數資訊": L.layerGroup(arrLayers_grey)
+            };
+
+            // 更新 overlay
+            for (let name in newOverlay) {
+                const layer = newOverlay[name];
+
+                if (firstLoad) {
+                    layer.addTo(map); // 首次載入全部開啟
+                } else {
+                    if (map.hasLayer(currentOverlayLayers[name])) {
+                        layer.addTo(map); // 保持使用者勾選狀態
+                    }
+                }
+
+                if (!currentOverlayLayers[name]) {
+                    layerControl.addOverlay(layer, name);
+                }
+
+                currentOverlayLayers[name] = layer;
+            }
+
+            firstLoad = false;
+
+            // 更新時間
+            let d = new Date();
+            document.querySelector("#current_time").innerHTML =
+                `上次更新： ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        }
+
+        async function next_refresh(sec) {
+            for (let i = sec; i > 0; i--) {
+                document.querySelector("#next_refresh").innerHTML = `${i} 秒後更新`;
+                await sleep(1000);
+            }
+        }
+
+        async function auto_refresh() {
+            while (true) {
+                await get_park_info();
+                await next_refresh(25);
+            }
+        }
+
+        auto_refresh();
+        document.querySelector("#refresh").addEventListener("click", get_park_info);
+    </script>
+
+</body>
+
+
+</html>
